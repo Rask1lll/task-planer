@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="./CSS/taskPlanerDesc.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Task Planner</h1>
+      <p>
+        Welcome to the Task Planner! Here you can manage your tasks efficiently.
+      </p>
+      <form class="task-form">
+        <label for="task" class="task-label">New Task:</label>
+        <input type="text" id="task" name="task" class="task-input" required />
+        <button type="submit" class="task-button">Add Task</button>
+      </form>
+      <ul class="task-list" id="task-list"></ul>
+    </main>
+    <script src="./JavaScript/addingTask.js" type="module"></script>
+    <script src="./JavaScript/dragAndDrop.js" type="module"></script>
+    <script src="./JavaScript/deleteTask.js" type="module"></script>
+  </body>
+</html>
