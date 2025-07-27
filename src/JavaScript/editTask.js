@@ -9,7 +9,7 @@ function addEditing(event) {
   const el = event.target;
   console.log(el.parentElement.textContent);
   const paretnElement = el.parentElement;
-  let textInTask = paretnElement.textContent;
+  let textInTask = paretnElement.parentElement.textContent;
   textInTask = getTextIntoTask(textInTask);
   paretnElement.innerHTML = `<input type="text" class="task-input" value='${textInTask}' required /> <div class="save-edit">Save Edit</div>`;
   const addingTrigger = paretnElement.querySelector(".save-edit");
@@ -20,13 +20,14 @@ export { editTask };
 
 function getTextIntoTask(text) {
   text = text.split(" ");
-  text = text.slice(0, -4);
+  text = text.slice(0, -5);
   let resulet = text.join(" ");
   return resulet;
 }
 
 function renderNewTask(event) {
-  const parentElement = event.target.parentElement;
+  const parentElement = event.target.parentElement.parentElement;
   const textInTask = parentElement.querySelector(".task-input").value;
-  event.target.parentElement.innerHTML = `${textInTask}  <div class="edit-task-item">Edit Task</div>  <div class="delete-task-item">Delete Task</div>`;
+  console.log(event.target.parentElement.parentElement);
+  event.target.parentElement.parentElement.innerHTML = `${textInTask}  <div class="task-item-options"><div class="edit-task-item">Edit Task</div>  <div class="delete-task-item">Delete Task</div></div>`;
 }

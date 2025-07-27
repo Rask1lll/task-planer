@@ -61,7 +61,15 @@ document.addEventListener("pointerup", (event) => {
     draggedElement = null;
   }
 
-  document
-    .elementsFromPoint(event.clientX, event.clientY)[0]
-    .insertAdjacentElement("beforeBegin", event.target);
+  if (
+    document
+      .elementsFromPoint(event.clientX, event.clientY)[0]
+      .matches("[draggable]")
+  ) {
+    document
+      .elementsFromPoint(event.clientX, event.clientY)[0]
+      .insertAdjacentElement("beforeBegin", event.target);
+  } else {
+    alert("ty che eban&");
+  }
 });

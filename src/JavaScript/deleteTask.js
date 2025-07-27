@@ -4,7 +4,9 @@ function deleteTask(event) {
     return;
   }
 
-  const parent = element.parentElement;
+  const parent = element.parentElement.parentElement;
+
+  console.log(parent);
   parent.style.display = "none";
 }
 
