@@ -3,28 +3,21 @@ import { getVisibleTasks, render } from "./render.js";
 
 export function handleTaskSelectionClick(taskId, event) {
   const isCtrlOrCmd = event.ctrlKey || event.metaKey;
-  const isShiftPressed = event.shiftKey;
+  const isShift = event.shiftKey;
 
-  if (isShiftPressed && appState.lastSelectedTaskId) {
-    const visibleTasks = getVisibleTasks();
-    const anchorIndex = visibleTasks.findIndex(
-      (t) => t.id === appState.lastSelectedTaskId
-    );
-    const clickedIndex = visibleTasks.findIndex((t) => t.id === taskId);
+  if (isShift && appState.lastSelectedTaskId) {
+    const visible = getVisibleTasks();
+    const idxA = visible.findIndex((t) => t.id === appState.lastSelectedTaskId);
+    const idxB = visible.findIndex((t) => t.id === taskId);
 
-    if (anchorIndex !== -1 && clickedIndex !== -1) {
-      const [from, to] =
-        anchorIndex < clickedIndex
-          ? [anchorIndex, clickedIndex]
-          : [clickedIndex, anchorIndex];
+    if (idxA !== -1 && idxB !== -1) {
+      const [from, to] = idxA < idxB ? [idxA, idxB] : [idxB, idxA];
+      const range = visible.slice(from, to + 1).map((t) => t.id);
+      const set = new Set(appState.selectedTaskIds);
+      range.forEach((id) => set.add(id));
+      appState.selectedTaskIds = Array.from(set);
+    } else toggleSingleSelection(taskId, isCtrlOrCmd);
 
-      const selectedRange = visibleTasks.slice(from, to + 1).map((t) => t.id);
-      const newSelectionSet = new Set(appState.selectedTaskIds);
-      selectedRange.forEach((id) => newSelectionSet.add(id));
-      appState.selectedTaskIds = Array.from(newSelectionSet);
-    } else {
-      toggleSingleSelection(taskId, isCtrlOrCmd);
-    }
     appState.lastSelectedTaskId = taskId;
   } else if (isCtrlOrCmd) {
     toggleSingleSelection(taskId, true);
@@ -37,10 +30,9 @@ export function handleTaskSelectionClick(taskId, event) {
   render();
 }
 
-function toggleSingleSelection(taskId, keepExistingSelection) {
+function toggleSingleSelection(taskId, keepExisting) {
   const alreadySelected = appState.selectedTaskIds.includes(taskId);
-
-  if (keepExistingSelection) {
+  if (keepExisting) {
     appState.selectedTaskIds = alreadySelected
       ? appState.selectedTaskIds.filter((id) => id !== taskId)
       : appState.selectedTaskIds.concat(taskId);

@@ -1,5 +1,5 @@
-import { state } from "./state.js";
-import { uid } from "./utils.js";
+import { appState } from "./state.js";
+import { generateUniqueId } from "./utils.js";
 import { save } from "./storage.js";
 import { render } from "./render.js";
 
@@ -18,18 +18,21 @@ export function attachUIEvents() {
   };
 
   els.addBtn.addEventListener("click", () => {
-    const v = els.newTaskInput.value.trim();
-    if (!v) return;
-    const nextOrder = state.tasks.length
-      ? Math.max(...state.tasks.map((t) => t.order)) + 1
+    const value = els.newTaskInput.value.trim();
+    if (!value) return;
+
+    const nextOrder = appState.taskList.length
+      ? Math.max(...appState.taskList.map((t) => t.order)) + 1
       : 0;
-    state.tasks.push({
-      id: uid(),
-      title: v.slice(0, 200),
+
+    appState.taskList.push({
+      id: generateUniqueId(),
+      title: value.slice(0, 200),
       created: Date.now(),
       done: false,
       order: nextOrder,
     });
+
     els.newTaskInput.value = "";
     save();
     render();
@@ -40,56 +43,58 @@ export function attachUIEvents() {
   });
 
   els.searchInput.addEventListener("input", () => {
-    state.q = els.searchInput.value;
+    appState.searchQuery = els.searchInput.value;
     render();
   });
 
-  els.filters.forEach((b) =>
-    b.addEventListener("click", () => {
-      state.filter = b.dataset.filter;
+  els.filters.forEach((btn) =>
+    btn.addEventListener("click", () => {
+      appState.activeFilter = btn.dataset.filter;
       render();
     })
   );
 
   els.sortBy.addEventListener("change", () => {
-    state.sortBy = els.sortBy.value;
+    appState.sortField = els.sortBy.value;
     render();
   });
 
   els.sortDir.addEventListener("change", () => {
-    state.sortDir = els.sortDir.value;
+    appState.sortDirection = els.sortDir.value;
     render();
   });
 
   els.bulkDone.addEventListener("click", () => {
-    const set = new Set(state.selected);
-    state.tasks.forEach((t) => {
-      if (set.has(t.id)) t.done = true;
+    const selected = new Set(appState.selectedTaskIds);
+    appState.taskList.forEach((task) => {
+      if (selected.has(task.id)) task.done = true;
     });
     save();
     render();
   });
 
   els.bulkUndone.addEventListener("click", () => {
-    const set = new Set(state.selected);
-    state.tasks.forEach((t) => {
-      if (set.has(t.id)) t.done = false;
+    const selected = new Set(appState.selectedTaskIds);
+    appState.taskList.forEach((task) => {
+      if (selected.has(task.id)) task.done = false;
     });
     save();
     render();
   });
 
   els.bulkDelete.addEventListener("click", () => {
-    const set = new Set(state.selected);
-    state.tasks = state.tasks.filter((t) => !set.has(t.id));
-    state.selected = [];
+    const selected = new Set(appState.selectedTaskIds);
+    appState.taskList = appState.taskList.filter(
+      (task) => !selected.has(task.id)
+    );
+    appState.selectedTaskIds = [];
     save();
     render();
   });
 
   els.bulkClearSel.addEventListener("click", () => {
-    state.selected = [];
-    state.lastAnchorId = null;
+    appState.selectedTaskIds = [];
+    appState.lastSelectedTaskId = null;
     render();
   });
 }
