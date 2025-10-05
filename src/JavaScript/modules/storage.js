@@ -1,22 +1,24 @@
-import { storeKey, state } from "./state.js";
+import { LOCAL_STORAGE_KEY, appState } from "./state.js";
 import { render } from "./render.js";
 
 export function save() {
-  localStorage.setItem(storeKey, JSON.stringify(state));
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appState));
 }
 
 export function load() {
-  const raw = localStorage.getItem(storeKey);
-  if (!raw) return;
+  const rawData = localStorage.getItem(LOCAL_STORAGE_KEY);
+  if (!rawData) return;
   try {
-    const s = JSON.parse(raw);
-    state.tasks = Array.isArray(s.tasks) ? s.tasks : [];
-    state.filter = s.filter || "all";
-    state.sortBy = s.sortBy || "created";
-    state.sortDir = s.sortDir || "asc";
-    state.q = s.q || "";
-    state.selected = Array.isArray(s.selected) ? s.selected : [];
-    state.lastAnchorId = s.lastAnchorId || null;
+    const parsed = JSON.parse(rawData);
+    appState.taskList = Array.isArray(parsed.taskList) ? parsed.taskList : [];
+    appState.activeFilter = parsed.activeFilter || "all";
+    appState.sortField = parsed.sortField || "created";
+    appState.sortDirection = parsed.sortDirection || "asc";
+    appState.searchQuery = parsed.searchQuery || "";
+    appState.selectedTaskIds = Array.isArray(parsed.selectedTaskIds)
+      ? parsed.selectedTaskIds
+      : [];
+    appState.lastSelectedTaskId = parsed.lastSelectedTaskId || null;
   } catch {}
   render();
 }

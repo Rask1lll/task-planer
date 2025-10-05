@@ -1,15 +1,15 @@
-import { state } from "./state.js";
-import { formatDate } from "./utils.js";
+import { appState } from "./state.js";
+import { formatDateTime } from "./utils.js";
 import { save } from "./storage.js";
-import { reorderManual } from "./reorder.js";
-import { onSelectClick } from "./select.js";
+import { reorderTasksManually } from "./reorder.js";
+import { handleTaskSelectionClick } from "./select.js";
 
-const els = {
+const uiRefs = {
   taskList: document.getElementById("taskList"),
   emptyState: document.getElementById("emptyState"),
   filters: Array.from(document.querySelectorAll(".filter")),
-  sortBy: document.getElementById("sortBy"),
-  sortDir: document.getElementById("sortDir"),
+  sortField: document.getElementById("sortBy"),
+  sortDirection: document.getElementById("sortDir"),
   searchInput: document.getElementById("searchInput"),
   statsChip: document.getElementById("statsChip"),
   doneChip: document.getElementById("doneChip"),
@@ -18,184 +18,202 @@ const els = {
   bulkDone: document.getElementById("bulkDone"),
   bulkUndone: document.getElementById("bulkUndone"),
   bulkDelete: document.getElementById("bulkDelete"),
-  bulkClearSel: document.getElementById("bulkClearSel"),
+  bulkClearSelection: document.getElementById("bulkClearSel"),
 };
 
-let draggedId = null;
+let draggedTaskId = null;
 
 export function getVisibleTasks() {
-  const q = state.q.trim().toLowerCase();
-  let items = state.tasks.filter((t) => {
-    if (state.filter === "active" && t.done) return false;
-    if (state.filter === "done" && !t.done) return false;
-    if (q && !t.title.toLowerCase().includes(q)) return false;
+  const query = appState.searchQuery.trim().toLowerCase();
+  let filteredTasks = appState.taskList.filter((task) => {
+    if (appState.activeFilter === "active" && task.done) return false;
+    if (appState.activeFilter === "done" && !task.done) return false;
+    if (query && !task.title.toLowerCase().includes(query)) return false;
     return true;
   });
-  const dir = state.sortDir === "asc" ? 1 : -1;
-  switch (state.sortBy) {
+
+  const sortMultiplier = appState.sortDirection === "asc" ? 1 : -1;
+
+  switch (appState.sortField) {
     case "created":
-      items.sort((a, b) => (a.created - b.created) * dir);
+      filteredTasks.sort((a, b) => (a.created - b.created) * sortMultiplier);
       break;
     case "title":
-      items.sort((a, b) => a.title.localeCompare(b.title, "ru") * dir);
+      filteredTasks.sort(
+        (a, b) => a.title.localeCompare(b.title, "ru") * sortMultiplier
+      );
       break;
     case "status":
-      items.sort((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1) * dir);
+      filteredTasks.sort(
+        (a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1) * sortMultiplier
+      );
       break;
     case "manual":
-      items.sort((a, b) => (a.order - b.order) * (dir === 1 ? 1 : -1));
+      filteredTasks.sort(
+        (a, b) => (a.order - b.order) * (sortMultiplier === 1 ? 1 : -1)
+      );
       break;
   }
-  return items;
+
+  return filteredTasks;
 }
 
 export function render() {
-  const items = getVisibleTasks();
-  els.taskList.innerHTML = "";
+  const tasksToRender = getVisibleTasks();
+  uiRefs.taskList.innerHTML = "";
 
-  if (items.length === 0) {
-    els.emptyState.hidden = false;
-  } else {
-    els.emptyState.hidden = true;
-    for (const t of items) {
-      const li = document.createElement("li");
-      li.className =
-        "task" +
-        (t.done ? " done" : "") +
-        (state.selected.includes(t.id) ? " selected" : "");
-      li.draggable = state.sortBy === "manual";
-      li.dataset.id = t.id;
-
-      const handle = document.createElement("div");
-      handle.className = "handle";
-      handle.textContent = "⋮⋮";
-
-      const titleWrap = document.createElement("div");
-      titleWrap.className = "title";
-
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = t.done;
-      cb.addEventListener("change", () => {
-        t.done = cb.checked;
-        save();
-        render();
-      });
-
-      const text = document.createElement("div");
-      text.className = "text";
-      text.textContent = t.title;
-
-      titleWrap.appendChild(cb);
-      titleWrap.appendChild(text);
-
-      const meta = document.createElement("div");
-      meta.className = "meta";
-
-      const date = document.createElement("span");
-      date.className = "date";
-      date.textContent = formatDate(t.created);
-
-      const editBtn = document.createElement("button");
-      editBtn.textContent = "Edit";
-      editBtn.addEventListener("click", () => startInlineEdit(li, t));
-
-      const delBtn = document.createElement("button");
-      delBtn.textContent = "Delete";
-      delBtn.addEventListener("click", () => {
-        state.tasks = state.tasks.filter((x) => x.id !== t.id);
-        save();
-        render();
-      });
-
-      meta.appendChild(date);
-      meta.appendChild(editBtn);
-      meta.appendChild(delBtn);
-      li.appendChild(handle);
-      li.appendChild(titleWrap);
-      li.appendChild(meta);
-
-      li.addEventListener("click", (ev) => {
-        if (ev.target === cb || ev.target === editBtn || ev.target === delBtn)
-          return;
-        onSelectClick(t.id, ev);
-      });
-
-      if (li.draggable) {
-        li.addEventListener("dragstart", (e) => {
-          draggedId = t.id;
-          li.classList.add("dragging");
-          e.dataTransfer.effectAllowed = "move";
-        });
-        li.addEventListener("dragend", () => {
-          draggedId = null;
-          li.classList.remove("dragging");
-          document
-            .querySelectorAll(".drag-over")
-            .forEach((el) => el.classList.remove("drag-over"));
-        });
-      }
-
-      els.taskList.appendChild(li);
-    }
+  if (tasksToRender.length === 0) {
+    uiRefs.emptyState.hidden = false;
+    return;
   }
 
-  const total = state.tasks.length;
-  const done = state.tasks.filter((t) => t.done).length;
-  els.statsChip.textContent = `${total} задач`;
-  els.doneChip.textContent = `${done} выполнено`;
+  uiRefs.emptyState.hidden = true;
 
-  if (state.selected.length > 0) {
-    els.bulkBar.classList.add("active");
-    els.bulkCount.textContent = `${state.selected.length} выбрано`;
+  for (const task of tasksToRender) {
+    const taskItem = document.createElement("li");
+    taskItem.className =
+      "task" +
+      (task.done ? " done" : "") +
+      (appState.selectedTaskIds.includes(task.id) ? " selected" : "");
+    taskItem.draggable = appState.sortField === "manual";
+    taskItem.dataset.id = task.id;
+
+    const dragHandle = document.createElement("div");
+    dragHandle.className = "handle";
+    dragHandle.textContent = "⋮⋮";
+
+    const titleContainer = document.createElement("div");
+    titleContainer.className = "title";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = task.done;
+    checkbox.addEventListener("change", () => {
+      task.done = checkbox.checked;
+      save();
+      render();
+    });
+
+    const titleText = document.createElement("div");
+    titleText.className = "text";
+    titleText.textContent = task.title;
+
+    titleContainer.appendChild(checkbox);
+    titleContainer.appendChild(titleText);
+
+    const metaContainer = document.createElement("div");
+    metaContainer.className = "meta";
+
+    const creationDate = document.createElement("span");
+    creationDate.className = "date";
+    creationDate.textContent = formatDateTime(task.created);
+
+    const editButton = document.createElement("button");
+    editButton.textContent = "Edit";
+    editButton.addEventListener("click", () => startInlineEdit(taskItem, task));
+
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "Delete";
+    deleteButton.addEventListener("click", () => {
+      appState.taskList = appState.taskList.filter((t) => t.id !== task.id);
+      save();
+      render();
+    });
+
+    metaContainer.appendChild(creationDate);
+    metaContainer.appendChild(editButton);
+    metaContainer.appendChild(deleteButton);
+    taskItem.appendChild(dragHandle);
+    taskItem.appendChild(titleContainer);
+    taskItem.appendChild(metaContainer);
+
+    taskItem.addEventListener("click", (event) => {
+      if (
+        event.target === checkbox ||
+        event.target === editButton ||
+        event.target === deleteButton
+      )
+        return;
+      handleTaskSelectionClick(task.id, event);
+    });
+
+    if (taskItem.draggable) {
+      taskItem.addEventListener("dragstart", (event) => {
+        draggedTaskId = task.id;
+        taskItem.classList.add("dragging");
+        event.dataTransfer.effectAllowed = "move";
+      });
+
+      taskItem.addEventListener("dragend", () => {
+        draggedTaskId = null;
+        taskItem.classList.remove("dragging");
+        document
+          .querySelectorAll(".drag-over")
+          .forEach((el) => el.classList.remove("drag-over"));
+      });
+    }
+
+    uiRefs.taskList.appendChild(taskItem);
+  }
+
+  const totalTasks = appState.taskList.length;
+  const completedTasks = appState.taskList.filter((t) => t.done).length;
+  uiRefs.statsChip.textContent = `${totalTasks} задач`;
+  uiRefs.doneChip.textContent = `${completedTasks} выполнено`;
+
+  if (appState.selectedTaskIds.length > 0) {
+    uiRefs.bulkBar.classList.add("active");
+    uiRefs.bulkCount.textContent = `${appState.selectedTaskIds.length} выбрано`;
   } else {
-    els.bulkBar.classList.remove("active");
+    uiRefs.bulkBar.classList.remove("active");
   }
 
   save();
 }
 
-els.taskList.addEventListener("dragover", (e) => {
-  if (!draggedId || state.sortBy !== "manual") return;
-  e.preventDefault();
-  const target = e.target.closest("li.task");
-  if (!target || target.dataset.id === draggedId) return;
-  target.classList.add("drag-over");
+uiRefs.taskList.addEventListener("dragover", (event) => {
+  if (!draggedTaskId || appState.sortField !== "manual") return;
+  event.preventDefault();
+  const targetTask = event.target.closest("li.task");
+  if (!targetTask || targetTask.dataset.id === draggedTaskId) return;
+  targetTask.classList.add("drag-over");
 });
 
-els.taskList.addEventListener("dragleave", (e) => {
-  const target = e.target.closest("li.task");
-  if (target) target.classList.remove("drag-over");
+uiRefs.taskList.addEventListener("dragleave", (event) => {
+  const targetTask = event.target.closest("li.task");
+  if (targetTask) targetTask.classList.remove("drag-over");
 });
 
-els.taskList.addEventListener("drop", (e) => {
-  e.preventDefault();
-  const target = e.target.closest("li.task");
-  if (!target || !draggedId) return;
-  const targetId = target.dataset.id;
-  reorderManual(draggedId, targetId);
-  draggedId = null;
+uiRefs.taskList.addEventListener("drop", (event) => {
+  event.preventDefault();
+  const targetTask = event.target.closest("li.task");
+  if (!targetTask || !draggedTaskId) return;
+  const targetId = targetTask.dataset.id;
+  reorderTasksManually(draggedTaskId, targetId);
+  draggedTaskId = null;
 });
 
-function startInlineEdit(li, task) {
-  const textDiv = li.querySelector(".text");
-  const old = task.title;
+function startInlineEdit(taskItem, task) {
+  const textElement = taskItem.querySelector(".text");
+  const oldTitle = task.title;
   const input = document.createElement("input");
   input.type = "text";
-  input.value = old;
-  textDiv.replaceWith(input);
+  input.value = oldTitle;
+  textElement.replaceWith(input);
   input.focus();
 
-  const commit = () => {
-    task.title = input.value.trim() || old;
+  const commitEdit = () => {
+    task.title = input.value.trim() || oldTitle;
     save();
     render();
   };
-  const cancel = () => render();
 
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") commit();
-    if (e.key === "Escape") cancel();
+  const cancelEdit = () => render();
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") commitEdit();
+    if (event.key === "Escape") cancelEdit();
   });
-  input.addEventListener("blur", commit);
+
+  input.addEventListener("blur", commitEdit);
 }

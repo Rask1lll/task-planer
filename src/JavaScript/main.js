@@ -1,4 +1,3 @@
-import { initState } from "./modules/state.js";
 import { render } from "./modules/render.js";
 import { load, save } from "./modules/storage.js";
 import { attachUIEvents } from "./modules/ui.js";

@@ -1,38 +1,50 @@
-import { state } from "./state.js";
+import { appState } from "./state.js";
 import { getVisibleTasks, render } from "./render.js";
 
-export function onSelectClick(id, ev) {
-  const isCtrl = ev.ctrlKey || ev.metaKey;
-  const isShift = ev.shiftKey;
-  if (isShift && state.lastAnchorId) {
-    const vis = getVisibleTasks();
-    const idxA = vis.findIndex((t) => t.id === state.lastAnchorId);
-    const idxB = vis.findIndex((t) => t.id === id);
-    if (idxA !== -1 && idxB !== -1) {
-      const [from, to] = idxA < idxB ? [idxA, idxB] : [idxB, idxA];
-      const range = vis.slice(from, to + 1).map((t) => t.id);
-      const set = new Set(state.selected);
-      range.forEach((i) => set.add(i));
-      state.selected = Array.from(set);
-    } else toggleSingle(id, isCtrl);
-    state.lastAnchorId = id;
-  } else if (isCtrl) {
-    toggleSingle(id, true);
-    state.lastAnchorId = id;
+export function handleTaskSelectionClick(taskId, event) {
+  const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+  const isShiftPressed = event.shiftKey;
+
+  if (isShiftPressed && appState.lastSelectedTaskId) {
+    const visibleTasks = getVisibleTasks();
+    const anchorIndex = visibleTasks.findIndex(
+      (t) => t.id === appState.lastSelectedTaskId
+    );
+    const clickedIndex = visibleTasks.findIndex((t) => t.id === taskId);
+
+    if (anchorIndex !== -1 && clickedIndex !== -1) {
+      const [from, to] =
+        anchorIndex < clickedIndex
+          ? [anchorIndex, clickedIndex]
+          : [clickedIndex, anchorIndex];
+
+      const selectedRange = visibleTasks.slice(from, to + 1).map((t) => t.id);
+      const newSelectionSet = new Set(appState.selectedTaskIds);
+      selectedRange.forEach((id) => newSelectionSet.add(id));
+      appState.selectedTaskIds = Array.from(newSelectionSet);
+    } else {
+      toggleSingleSelection(taskId, isCtrlOrCmd);
+    }
+    appState.lastSelectedTaskId = taskId;
+  } else if (isCtrlOrCmd) {
+    toggleSingleSelection(taskId, true);
+    appState.lastSelectedTaskId = taskId;
   } else {
-    state.selected = [id];
-    state.lastAnchorId = id;
+    appState.selectedTaskIds = [taskId];
+    appState.lastSelectedTaskId = taskId;
   }
+
   render();
 }
 
-function toggleSingle(id, keepOthers) {
-  const exists = state.selected.includes(id);
-  if (keepOthers) {
-    state.selected = exists
-      ? state.selected.filter((x) => x !== id)
-      : state.selected.concat(id);
+function toggleSingleSelection(taskId, keepExistingSelection) {
+  const alreadySelected = appState.selectedTaskIds.includes(taskId);
+
+  if (keepExistingSelection) {
+    appState.selectedTaskIds = alreadySelected
+      ? appState.selectedTaskIds.filter((id) => id !== taskId)
+      : appState.selectedTaskIds.concat(taskId);
   } else {
-    state.selected = exists ? [] : [id];
+    appState.selectedTaskIds = alreadySelected ? [] : [taskId];
   }
 }

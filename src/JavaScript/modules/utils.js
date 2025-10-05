@@ -1,10 +1,9 @@
-export const uid = () =>
-  Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+export const uid = () => Date.now().toString(36);
 
-export const formatDate = (ts) => {
-  const d = new Date(ts);
-  const p = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(
-    d.getHours()
-  )}:${p(d.getMinutes())}`;
+export const formatDateTime = (timestamp) => {
+  const date = new Date(timestamp);
+  const pad = (number) => String(number).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate()
+  )} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };

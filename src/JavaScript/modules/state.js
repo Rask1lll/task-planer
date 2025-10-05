@@ -1,15 +1,15 @@
-export const storeKey = "taskPlanner.v1";
+export const LOCAL_STORAGE_KEY = "taskPlanner.v1";
 
-export let state = {
-  tasks: [],
-  filter: "all",
-  sortBy: "created",
-  sortDir: "asc",
-  q: "",
-  selected: [],
-  lastAnchorId: null,
+export let appState = {
+  taskList: [],
+  activeFilter: "all",
+  sortField: "created",
+  sortDirection: "asc",
+  searchQuery: "",
+  selectedTaskIds: [],
+  lastSelectedTaskId: null,
 };
 
-export function initState(newState) {
-  state = { ...state, ...newState };
+export function initializeState(updatedState) {
+  appState = { ...appState, ...updatedState };
 }
