@@ -1,26 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-    <link rel="stylesheet" href="./CSS/taskPlanerDesc.css" />
+    <meta charset="utf-8" />
+    <title>Task Planner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="./CSS/style.css" />
   </head>
   <body>
-    <main>
-      <h1>Task Planner</h1>
-      <p>
-        Welcome to the Task Planner! Here you can manage your tasks efficiently.
-      </p>
-      <form class="task-form">
-        <label for="task" class="task-label">New Task:</label>
-        <input type="text" id="task" name="task" class="task-input" required />
-        <button type="submit" class="task-button">Add Task</button>
-      </form>
-      <ul class="task-list" id="task-list"></ul>
-    </main>
-    <script src="./JavaScript/addingTask.js" type="module"></script>
-    <script src="./JavaScript/dragAndDrop.js" type="module"></script>
-    <script src="./JavaScript/deleteTask.js" type="module"></script>
+    <div class="wrap">
+      <header>
+        <h1>Task Planner</h1>
+      </header>
+
+      <section class="panel" aria-label="Task Planner">
+        <div class="adder">
+          <input
+            id="newTaskInput"
+            type="text"
+            placeholder="Новая задача…"
+            maxlength="200"
+          />
+          <button id="addBtn" class="primary" aria-label="Добавить">
+            Добавить
+          </button>
+        </div>
+
+        <div class="toolbar">
+          <div class="search">
+            <input id="searchInput" type="text" placeholder="Поиск…" />
+          </div>
+
+          <div class="filters" role="tablist" aria-label="Фильтры">
+            <button class="filter active" data-filter="all">Все</button>
+            <button class="filter" data-filter="active">Активные</button>
+            <button class="filter" data-filter="done">Выполненные</button>
+          </div>
+
+          <div style="display: flex; gap: 8px; align-items: center">
+            <select id="sortBy" aria-label="Сортировка по">
+              <option value="created">По дате создания</option>
+              <option value="title">По названию (A→Z)</option>
+              <option value="status">По статусу</option>
+              <option value="manual">Ручной порядок</option>
+            </select>
+            <select id="sortDir" aria-label="Направление">
+              <option value="asc">Возр.</option>
+              <option value="desc">Убыв.</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="stats">
+          <span id="statsChip" class="chip">0 задач</span>
+          <span id="doneChip" class="chip">0 выполнено</span>
+        </div>
+
+        <div id="bulkBar" class="bulkbar" aria-live="polite">
+          <span class="count" id="bulkCount">0 выбрано</span>
+          <button id="bulkDone">Отметить выполненными</button>
+          <button id="bulkUndone">Снять выполненные</button>
+          <button
+            id="bulkDelete"
+            style="border-color: #fee2e2; background: #fff"
+          >
+            Удалить
+          </button>
+          <button id="bulkClearSel">Снять выделение</button>
+        </div>
+
+        <ul id="taskList" aria-label="Список задач"></ul>
+        <div id="emptyState" class="empty" hidden>
+          Список пуст. Добавь первую задачу.
+        </div>
+      </section>
+    </div>
+
+    <script src="./JavaScript/deleteTask.js"></script>
   </body>
 </html>
